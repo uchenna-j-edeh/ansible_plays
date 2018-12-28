@@ -1,0 +1,33 @@
+---
+- hosts: all
+
+  vars:
+    file_list: ['/home', '/usr', '/var']
+
+  tasks:
+    - name: find the owner of each file
+      stat:
+        path: "{{ item }}"
+      with_items: "{{ file_list }}"
+      register: stat_var
+
+    - debug:
+        msg: "{{ item.stat.pw_name }}"
+      with_items: "{{ stat_var.results }}"
+
+    - name: list the files in the current directory
+      command: ls "{{ item }}"
+      with_items: "{{ file_list }}"
+      register: output
+
+        #  - set_fact:
+        #myvar: "{{ result.stdout.split('\n') }}"
+    - name: become a different user
+      become: yes
+      become_user: "{{ item.1.stat.pw_name }}"
+      debug:
+        msg: "{{ item.0.stdout_lines }}"
+      with_together: 
+        - "{{ output.results }}"
+        - "{{ stat_var.results }}"
+
